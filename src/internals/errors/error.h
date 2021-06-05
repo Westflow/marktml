@@ -10,6 +10,6 @@ typedef enum
     ErrorUnknownArg
 } TypeOfError;
 
-void throw_exception(TypeOfError err, const char* msg);
+void throw_error(TypeOfError err, const char* msg);
 
 #endif
