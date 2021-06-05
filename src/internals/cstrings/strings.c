@@ -1,5 +1,5 @@
 #include <assert.h>
-#include <cstrings/strings.h>
+#include <internals/cstrings/strings.h>
 #include <string.h>
 
 typedef struct cstring
