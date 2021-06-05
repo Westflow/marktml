@@ -12,7 +12,9 @@ static const char* ERROR_INFO[][InitValueInfoLength] = {
     [ErrorParsingFailed] = {"ParsingFailed", "Can't convert this document."},
     [ErrorIndexOutOfRange] = {"IndexOutOfRange", "Index was out of range in -"},
     [ErrorOutOfMemory] = {"OutOfMemory", "Could not allocate enough memory via -"},
-    [ErrorUnknownArg] = {"UnknownArgument", "You entered an unknown argument."}};
+    [ErrorUnknownArg] = {"UnknownArgument", "You entered an unknown argument."},
+    [ErrorReadonlyMemAccess] = {"ReadonlyMemoryAccess", "Pointer pointed on readonly memory block -"},
+};
 
 void throw_error(TypeOfError ex, const char* msg)
 {

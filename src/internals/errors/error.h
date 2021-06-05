@@ -7,7 +7,8 @@ typedef enum
     ErrorParsingFailed,
     ErrorIndexOutOfRange,
     ErrorOutOfMemory,
-    ErrorUnknownArg
+    ErrorUnknownArg,
+    ErrorReadonlyMemAccess,
 } TypeOfError;
 
 void throw_error(TypeOfError err, const char* msg);

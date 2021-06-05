@@ -1,5 +1,6 @@
-#include <assert.h>
 #include <internals/cstrings/strings.h>
+#include <internals/errors/error.h>
+#include <internals/memext/memext.h>
 #include <string.h>
 
 typedef struct cstring
@@ -11,10 +12,8 @@ typedef struct cstring
 
 static void expand_str_data(String* str, const size_t size)
 {
-    void* tmp = realloc(str->raw, size);
-    assert(tmp);
+    str->raw = memrealloc(str->raw, size);
     str->capacity = size;
-    str->raw = tmp;
 }
 
 size_t cs_length(const String* self)
@@ -34,45 +33,48 @@ const char* cs_raw(const String* self)
 
 char cs_get(const String* self, size_t index)
 {
-    if (!self || index >= self->length)
+    if (!self)
     {
-        return -1;
+        throw_error(ErrorReadonlyMemAccess, "cs_get");
     }
-    return self->raw[index];
+    return index < self->length ? self->raw[index] : -1;
 }
 
 void cs_set(const String* self, char item, size_t index)
 {
-    if (!self || index >= self->length)
+    if (!self)
     {
-        return;
+        throw_error(ErrorReadonlyMemAccess, "cs_set");
     }
-    self->raw[index] = item;
+    if (index < self->length)
+    {
+        self->raw[index] = item;
+    }
 }
 
 String* cs_clone(const String* self)
 {
     if (!self)
     {
-        return NULL;
+        throw_error(ErrorReadonlyMemAccess, "cs_clone");
     }
     return cs_create(self->raw);
 }
 
 int64_t cs_compare(const String* str, const char* raw, bool ignore_case)
 {
-    if (!str)
+    if (!str || !raw)
     {
-        return -1;
+        throw_error(ErrorReadonlyMemAccess, "cs_compare");
     }
     return ignore_case ? strcasecmp(str->raw, raw) : strcmp(str->raw, raw);
 }
 
 void cs_concat(String* str, const char* raw)
 {
-    if (!str)
+    if (!str || !raw)
     {
-        return;
+        throw_error(ErrorReadonlyMemAccess, "cs_concat");
     }
     if (str->length + strlen(raw) + 1 >= str->capacity)
     {
@@ -84,6 +86,10 @@ void cs_concat(String* str, const char* raw)
 
 void cs_append(String* str, char item)
 {
+    if (!str)
+    {
+        throw_error(ErrorReadonlyMemAccess, "cs_append");
+    }
     if (str->length + 1 >= str->capacity)
     {
         expand_str_data(str, (1 + str->capacity) * 2);
@@ -94,18 +100,18 @@ void cs_append(String* str, char item)
 
 bool cs_contains(String* str, const char* value)
 {
-    if (!str)
+    if (!str || !value)
     {
-        return false;
+        throw_error(ErrorReadonlyMemAccess, "cs_contains");
     }
     return strstr(str->raw, value) ? true : false;
 }
 
 int64_t cs_indexof(String* str, const char* value)
 {
-    if (!str)
+    if (!str || !value)
     {
-        return -1;
+        throw_error(ErrorReadonlyMemAccess, "cs_indexof");
     }
     int64_t result = strstr(str->raw, value) - str->raw;
     return result >= 0 ? result : -1;
@@ -113,9 +119,9 @@ int64_t cs_indexof(String* str, const char* value)
 
 int64_t cs_indexof_last(String* str, const char* value)
 {
-    if (!str)
+    if (!str || !value)
     {
-        return -1;
+        throw_error(ErrorReadonlyMemAccess, "cs_indexof_last");
     }
     int64_t result = -1;
     char* current_substr = str->raw;
@@ -129,9 +135,9 @@ int64_t cs_indexof_last(String* str, const char* value)
 
 int64_t cs_indexof_any(String* str, const char* value, size_t start_index)
 {
-    if (!str)
+    if (!str || !value)
     {
-        return -1;
+        throw_error(ErrorReadonlyMemAccess, "cs_indexof_any");
     }
     int64_t result = -1;
     char* current_substr = str->raw;
@@ -150,6 +156,10 @@ int64_t cs_indexof_any(String* str, const char* value, size_t start_index)
 
 void cs_insert(String* str, const char* value, size_t index)
 {
+    if (!str || !value)
+    {
+        throw_error(ErrorReadonlyMemAccess, "cs_insert");
+    }
     if (cs_length(str) == 0)
     {
         cs_concat(str, value);
@@ -171,14 +181,14 @@ void cs_remove_all(String* str, size_t index)
 {
     if (!str)
     {
-        return;
+        throw_error(ErrorReadonlyMemAccess, "cs_remove_all");
     }
     if (index < str->length)
     {
         size_t new_size = str->length - (str->length - index);
-        char* new_raw = malloc((new_size + 1) * 2);
+        char* new_raw = memalloc((new_size + 1) * 2);
         memcpy(new_raw, str->raw, new_size);
-        free(str->raw);
+        memfree(str->raw);
         str->raw = new_raw;
         str->capacity = (new_size + 1) * 2;
         str->length = new_size + 1;
@@ -190,7 +200,7 @@ String* cs_replace(String* str, const char* old_value, const char* new_value)
 {
     if (!str || !old_value || !new_value)
     {
-        return NULL;
+        throw_error(ErrorReadonlyMemAccess, "cs_replace");
     }
     char* old_sub = strstr(str->raw, old_value);
     if (!old_sub || strlen(old_sub) == 0 || strlen(old_value) == 0)
@@ -219,7 +229,11 @@ String* cs_replace(String* str, const char* old_value, const char* new_value)
 
 size_t cs_split(const String* str, const char* pattern, String*** container)
 {
-    char* copy = malloc(str->length + 1);
+    if (!str || !pattern)
+    {
+        throw_error(ErrorReadonlyMemAccess, "cs_split");
+    }
+    char* copy = memalloc(str->length + 1);
     memcpy(copy, str->raw, str->length + 1);
     size_t length = 0;
     for (char* substr = strtok(copy, pattern); substr != NULL; substr = strtok(NULL, pattern))
@@ -227,46 +241,40 @@ size_t cs_split(const String* str, const char* pattern, String*** container)
         *container = realloc(*container, sizeof(String*) * (++length));
         (*container)[length - 1] = cs_create(substr);
     }
-    free(copy);
+    memfree(copy);
     return length;
 }
 
 void cs_free(String* self)
 {
-    if (self)
+    if (!self)
     {
-        if (self->raw)
-        {
-            free(self->raw);
-            self->raw = NULL;
-        }
-        free(self);
+        throw_error(ErrorReadonlyMemAccess, "cs_free");
     }
+    memfree(self->raw);
+    self->raw = NULL;
+    memfree(self);
 }
 
 void cs_clear(String* self)
 {
-    if (self)
+    if (!self)
     {
-        if (self->raw)
-        {
-            free(self->raw);
-            self->raw = malloc(self->capacity);
-            self->length = 0;
-            self->raw[self->length] = 0;
-        }
+        throw_error(ErrorReadonlyMemAccess, "cs_clear");
     }
+    memfree(self->raw);
+    self->raw = malloc(self->capacity);
+    self->length = 0;
+    self->raw[self->length] = 0;
 }
 
 String* cs_init(size_t init_cap)
 {
     if (init_cap > 0)
     {
-        String* str = malloc(sizeof(String));
-        assert(str);
+        String* str = memalloc(sizeof(String));
         str->capacity = init_cap;
-        str->raw = malloc(str->capacity);
-        assert(str->raw);
+        str->raw = memalloc(str->capacity);
         str->length = 0;
         str->raw[0] = '\0';
         return str;
