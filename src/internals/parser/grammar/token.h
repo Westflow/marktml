@@ -17,10 +17,13 @@ typedef enum
     TokenExclamationMark,
     TokenOPSquareBracket,
     TokenCLAngleBracket,
+    TokenTilde,
     TokenSpace,
     TokenCLSquareBracket,
     TokenOPBracket,
     TokenCLBracket,
+    TokenQuote,
+    TokenColon,
     TokenNumber,
     TokenText
 } TypeOfToken;
