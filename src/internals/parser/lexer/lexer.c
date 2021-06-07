@@ -6,13 +6,6 @@
 
 static const char tokens[] = "\n_*`=-+<#![>~ ]()\":";
 
-typedef enum
-{
-    StateText,
-    StateEscape,
-    StateOther
-} LState;
-
 /******************************
  *                            *
  *  Section: Helper functions *

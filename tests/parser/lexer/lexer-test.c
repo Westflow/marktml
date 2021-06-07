@@ -49,14 +49,14 @@ CTEST(lexer, tokenize_text)
 
 CTEST(lexer, tokenize_number_ok)
 {
-    String* str = cs_create("12345.\n");
+    String* str = cs_create("1. 2. 3. 4. 5. 6. 7. 8. 9. 123456. 12345.\n");
     Array(Token) arr = tokenize(str);
-    ASSERT_EQUAL(TokenNumber, arr[0].type);
-    ASSERT_TRUE(arr[0].op);
-    ASSERT_STR("12345.", cs_raw(arr[0].value));
-    for (size_t i = 0; i < get_array_length(arr); ++i)
+    for (size_t i = 0; i < get_array_length(arr); i += 2)
     {
+        ASSERT_EQUAL(TokenNumber, arr[i].type);
+        ASSERT_TRUE(arr[i].op);
         cs_free(arr[i].value);
+        cs_free(arr[i + 1].value);
     }
     cs_free(str);
     free_array(arr);
@@ -100,4 +100,54 @@ CTEST(lexer, escape_all_tokens)
     cs_free(arr[i].value);
     cs_free(str);
     free_array(arr);
+}
+
+CTEST(tokenizer, check_empty)
+{
+    String* str = cs_create("");
+    Array(Token) arr = tokenize(str);
+    ASSERT_EQUAL(0, get_array_length(arr));
+    free_array(arr);
+    cs_free(str);
+}
+
+CTEST(tokenizer, escape_number)
+{
+    String* str = cs_create("1\\.\n");
+    Array(Token) arr = tokenize(str);
+    ASSERT_EQUAL(TokenText, arr[0].type);
+    for (size_t i = 0; i < get_array_length(arr); ++i)
+    {
+        cs_free(arr[i].value);
+    }
+    free_array(arr);
+    cs_free(str);
+}
+
+CTEST(tokenizer, escape_escape)
+{
+    String* str = cs_create("\\\\\n");
+    Array(Token) arr = tokenize(str);
+    ASSERT_EQUAL(TokenText, arr[0].type);
+    for (size_t i = 0; i < get_array_length(arr); ++i)
+    {
+        cs_free(arr[i].value);
+    }
+    free_array(arr);
+    cs_free(str);
+}
+
+CTEST(tokenizer, check_all_single_tokens)
+{
+    String* str = cs_create("\n_*`=-+<#![>~ ]()\":");
+    Array(Token) arr = tokenize(str);
+    for (size_t i = 0; i < get_array_length(arr); ++i)
+    {
+        ASSERT_EQUAL(cs_get(str, i), cs_get(arr[i].value, 0));
+        ASSERT_EQUAL((TypeOfToken)i, arr[i].type);
+        i < TokenSpace ? ASSERT_TRUE(arr[i].op) : ASSERT_FALSE(arr[i].op);
+        cs_free(arr[i].value);
+    }
+    free_array(arr);
+    cs_free(str);
 }
